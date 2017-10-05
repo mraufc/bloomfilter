@@ -17,7 +17,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-package main
+package bloomfilter
 
 import (
 	"log"
@@ -25,7 +25,6 @@ import (
 	"math"
 	"hash/fnv"
 	"sync"
-	// "time"
 )
 
 // HashFunction64 is a function type that takes a byte slice as input and returns hash value of uint64 type
@@ -58,27 +57,6 @@ func (bf *BloomFilter) Add(data []byte) {
 		sliceLoc := (currLoc - (currLoc % 64)) / 64
 		bf.bits[sliceLoc] |= (1 << (currLoc % 64))
 	}
-}
-
-func main() {
-	bf := NewByEstimates(uint64(10), 0.01, nil, nil)
-	bf.Add([]byte("asdf"))
-	
-	fmt.Println(bf.Query([]byte("asdf")))
-
-	bf.Add([]byte("aahahahah"))
-	
-	fmt.Println(bf.Query([]byte("aahahahah")))
-
-	bf.Add([]byte("qqqqqqqqqq"))
-	
-	fmt.Println(bf.Query([]byte("qqqqqqqqqq")))
-
-	fmt.Println(bf.Query([]byte("xxx")))
-	fmt.Println(bf.Query([]byte("xxxxxxxxxxxxxxxxxxxxx")))
-
-	bf.Add([]byte("xxxxxxxxxxxxxxxxxxxxx"))
-	fmt.Println(bf.Query([]byte("xxxxxxxxxxxxxxxxxxxxx")))
 }
 
 // Query tests the byte slice input's existence in the BloomFilter structure and returns a boolean value. 
@@ -142,16 +120,6 @@ func defaultHash2() func(input []byte) uint64 {
 		return h.Sum64()
 	}
 }
-
-// func defaultHash2() func(input []byte) uint64 {
-// 	return func(input []byte) uint64 {
-// 		retVal := uint64(0)
-// 		for i := 0; i < len(input); i++ {
-// 			retVal = retVal * 101 + uint64(input[i])
-// 		}
-// 		return retVal
-// 	}
-// }
 
 // NewBySizeAndNumHashFuncs requires maximum size in bits and number of hash functions that will be created via double hashing of
 // hash function hash1 and hash function hash2.

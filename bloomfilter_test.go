@@ -1,4 +1,4 @@
-package main
+package bloomfilter
 
 import (
 	"fmt"
