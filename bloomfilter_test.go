@@ -16,13 +16,13 @@ type testCase struct {
 	data []byte
 }
 
-func TestBasics(t *testing.T) {
-	const (
-		count int = 10000
-		numItems uint64 = uint64(count)
-		fp float64 = 0.01
-		maxStrLen int = 50
-		minStrLen int = 20
+func TestBloomFilterBasics(t *testing.T) {
+	var (
+		count = 1000000
+		numItems = uint64(count)
+		fp = 0.01
+		maxStrLen = 50
+		minStrLen = 20
 	)
 
 	tests := prepTestCases(count, minStrLen, maxStrLen)
@@ -45,13 +45,119 @@ func TestBasics(t *testing.T) {
 	}
 }
 
+func TestBloomFilterTSBasics(t *testing.T) {
+	var (
+		count = 1000000
+		numItems = uint64(count)
+		fp = 0.01
+		maxStrLen = 50
+		minStrLen = 20
+	)
+
+	tests := prepTestCases(count, minStrLen, maxStrLen)
+
+	bf := NewTSByEstimates(numItems, fp, nil, nil)
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			bf.Add(tt.data)
+		})
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			result := bf.Query(tt.data)
+			if !result {
+				t.Errorf("Query(%v): expected %v, actual %v", string(tt.data), true, false)
+			}
+		})
+	}
+}
+
+// This test should fail when "go test -race" command is issued.
+// BloomFilter structure is NOT thread safe.
+// func TestBloomFilterParallel(t *testing.T) {
+// 	var (
+// 		count = 10
+// 		numItems = uint64(count)
+// 		fp = 0.01
+// 		maxStrLen = 50
+// 		minStrLen = 20
+// 	)
+// 
+// 	tests := prepTestCases(count, minStrLen, maxStrLen)
+// 
+// 	bf := NewByEstimates(numItems, fp, nil, nil)
+// 
+// 	t.Parallel()
+// 	for _, tt := range tests {
+// 		t.Run(tt.description, func(t *testing.T) {
+// 			t.Parallel()
+// 			bf.Add(tt.data)
+// 		})
+// 		t.Run(tt.description, func(t *testing.T) {
+// 			t.Parallel()
+// 			bf.Query(tt.data)
+// 		})
+// 	}
+// }
+
+// This test should NOT fail when "go test -race" command is issued.
+// BloomFilterTS structure is thread safe.
+func TestBloomFilterTSParallel(t *testing.T) {
+	var (
+		count = 10
+		numItems = uint64(count)
+		fp = 0.01
+		maxStrLen = 50
+		minStrLen = 20
+	)
+
+	tests := prepTestCases(count, minStrLen, maxStrLen)
+
+	bf := NewTSByEstimates(numItems, fp, nil, nil)
+
+	t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			t.Parallel()
+			bf.Add(tt.data)
+		})
+		t.Run(tt.description, func(t *testing.T) {
+			t.Parallel()
+			bf.Query(tt.data)
+		})
+	}
+}
+
+func TestFalsePositiveRate1000_5(t *testing.T)   { testFalsePositiveRate(t, 1000, 0.5) }
+func TestFalsePositiveRate10000_5(t *testing.T)   { testFalsePositiveRate(t, 10000, 0.5) }
+func TestFalsePositiveRate100000_5(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.5) }
+func TestFalsePositiveRate1000000_5(t *testing.T)   { testFalsePositiveRate(t, 1000000, 0.5) }
+func TestFalsePositiveRate1000_1(t *testing.T)   { testFalsePositiveRate(t, 1000, 0.1) }
+func TestFalsePositiveRate10000_1(t *testing.T)   { testFalsePositiveRate(t, 10000, 0.1) }
+func TestFalsePositiveRate100000_1(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.1) }
+func TestFalsePositiveRate1000000_1(t *testing.T)   { testFalsePositiveRate(t, 1000000, 0.1) }
+func TestFalsePositiveRate1000_01(t *testing.T)   { testFalsePositiveRate(t, 1000, 0.01) }
+func TestFalsePositiveRate10000_01(t *testing.T)   { testFalsePositiveRate(t, 10000, 0.01) }
+func TestFalsePositiveRate100000_01(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.01) }
+func TestFalsePositiveRate1000000_01(t *testing.T)   { testFalsePositiveRate(t, 1000000, 0.01) }
+func TestFalsePositiveRate1000_001(t *testing.T)   { testFalsePositiveRate(t, 1000, 0.001) }
+func TestFalsePositiveRate10000_001(t *testing.T)   { testFalsePositiveRate(t, 10000, 0.001) }
+func TestFalsePositiveRate100000_001(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.001) }
+func TestFalsePositiveRate1000000_001(t *testing.T)   { testFalsePositiveRate(t, 1000000, 0.001) }
+func TestFalsePositiveRate1000_0001(t *testing.T)   { testFalsePositiveRate(t, 1000, 0.0001) }
+func TestFalsePositiveRate10000_0001(t *testing.T)   { testFalsePositiveRate(t, 10000, 0.0001) }
+func TestFalsePositiveRate100000_0001(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.0001) }
+func TestFalsePositiveRate1000000_0001(t *testing.T)   { testFalsePositiveRate(t, 1000000, 0.0001) }
+
 func BenchmarkAdd(t *testing.B) {
-	const (
-		count int = 1000000
-		numItems uint64 = uint64(count)
-		fp float64 = 0.01
-		maxStrLen int = 50
-		minStrLen int = 20
+	var (
+		count = 1000000
+		numItems = uint64(count)
+		fp = 0.01
+		maxStrLen = 50
+		minStrLen = 20
 	)
 
 	bf := NewByEstimates(numItems, fp, nil, nil)
@@ -66,12 +172,12 @@ func BenchmarkAdd(t *testing.B) {
 }
 
 func BenchmarkQueryEmptyBF(t *testing.B) {
-	const (
-		count int = 1000000
-		numItems uint64 = uint64(count)
-		fp float64 = 0.01
-		maxStrLen int = 50
-		minStrLen int = 20
+	var (
+		count = 1000000
+		numItems = uint64(count)
+		fp = 0.01
+		maxStrLen = 50
+		minStrLen = 20
 	)
 
 	bf := NewByEstimates(numItems, fp, nil, nil)
@@ -81,7 +187,6 @@ func BenchmarkQueryEmptyBF(t *testing.B) {
 	for _, tt := range tests {
 		bf.Query(tt.data)
 	}
-	
 }
 
 func BenchmarkQuery(t *testing.B) {
@@ -108,48 +213,11 @@ func BenchmarkQuery(t *testing.B) {
 	
 }
 
-func prepTestCases(count, minStrLen, maxStrLen int) []testCase {
-	rand.Seed(time.Now().UnixNano())
-	
-	testCases := make([]testCase, count)
-
-	for i := 0; i < count; i++ {
-		s := randBytes(rand.Intn(maxStrLen - minStrLen + 1) + minStrLen)
-		testCases[i].data = s
-		testCases[i].description = fmt.Sprintf("test case: %v, data: %v", i+1, string(s))
-	}
-
-	return testCases
-}
-
-func TestFalsePositiveRate1000_5(t *testing.T)   { testFalsePositiveRate(t, 1000, 0.5) }
-func TestFalsePositiveRate10000_5(t *testing.T)   { testFalsePositiveRate(t, 10000, 0.5) }
-// func TestFalsePositiveRate100000_5(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.5) }
-// func TestFalsePositiveRate1000000_5(t *testing.T)   { testFalsePositiveRate(t, 1000000, 0.5) }
-// func TestFalsePositiveRate1000_1(t *testing.T)   { testFalsePositiveRate(t, 1000, 0.1) }
-// func TestFalsePositiveRate10000_1(t *testing.T)   { testFalsePositiveRate(t, 10000, 0.1) }
-// func TestFalsePositiveRate100000_1(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.1) }
-// func TestFalsePositiveRate1000000_1(t *testing.T)   { testFalsePositiveRate(t, 1000000, 0.1) }
-// func TestFalsePositiveRate1000_01(t *testing.T)   { testFalsePositiveRate(t, 1000, 0.01) }
-// func TestFalsePositiveRate10000_01(t *testing.T)   { testFalsePositiveRate(t, 10000, 0.01) }
-// func TestFalsePositiveRate100000_01(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.01) }
-// func TestFalsePositiveRate1000000_01(t *testing.T)   { testFalsePositiveRate(t, 1000000, 0.01) }
-// func TestFalsePositiveRate1000_001(t *testing.T)   { testFalsePositiveRate(t, 1000, 0.001) }
-// func TestFalsePositiveRate10000_001(t *testing.T)   { testFalsePositiveRate(t, 10000, 0.001) }
-// func TestFalsePositiveRate100000_001(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.001) }
-// func TestFalsePositiveRate1000000_001(t *testing.T)   { testFalsePositiveRate(t, 1000000, 0.001) }
-// func TestFalsePositiveRate1000_0001(t *testing.T)   { testFalsePositiveRate(t, 1000, 0.0001) }
-// func TestFalsePositiveRate10000_0001(t *testing.T)   { testFalsePositiveRate(t, 10000, 0.0001) }
-// func TestFalsePositiveRate100000_0001(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.0001) }
-// func TestFalsePositiveRate1000000_0001(t *testing.T)   { testFalsePositiveRate(t, 1000000, 0.0001) }
-
-
 func testFalsePositiveRate(t *testing.T, count int, fp float64) {
-	numItems := uint64(count)
-	
-	const (
-		maxStrLen int = 40
-		minStrLen int = 30
+	var (
+		numItems = uint64(count)
+		maxStrLen = 40
+		minStrLen = 30
 	)
 
 	bf := NewByEstimates(numItems, fp, nil, nil)
@@ -188,12 +256,8 @@ func testFalsePositiveRate(t *testing.T, count int, fp float64) {
 
 	actualFpRate := float64(fpCount) / float64(totalCount)
 
-	if actualFpRate > 2.0 * fp {
-		t.Fail()
-	}
-
-	if t.Failed() {
-		t.Errorf("Expected false positive rate is %v, actual is %v - %v out of %v items - %v\n", fp, actualFpRate, fpCount, totalCount, len(mT))
+	if actualFpRate > 1.3 * fp {
+		t.Errorf("Expected false positive rate is %v, actual is %v - %v out of %v items\n", fp, actualFpRate, fpCount, totalCount)
 	}
 }
 
@@ -205,5 +269,16 @@ func randBytes(n int) []byte {
 	return b
 }
 
+func prepTestCases(count, minStrLen, maxStrLen int) []testCase {
+	rand.Seed(time.Now().UnixNano())
+	
+	testCases := make([]testCase, count)
 
+	for i := 0; i < count; i++ {
+		s := randBytes(rand.Intn(maxStrLen - minStrLen + 1) + minStrLen)
+		testCases[i].data = s
+		testCases[i].description = fmt.Sprintf("test case: %v, data: %v", i+1, string(s))
+	}
 
+	return testCases
+}
