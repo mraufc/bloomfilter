@@ -21,7 +21,6 @@ package bloomfilter
 
 import (
 	"log"
-	"fmt"
 	"math"
 	"hash/fnv"
 	"sync"
@@ -101,7 +100,7 @@ func NewByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, hash2
 	}
 	size := uint64(math.Ceil(-1 * float64(numItems) * math.Log(fpRate) / math.Pow(math.Log(2), 2)))
 	numHashFunctions := uint8(math.Ceil(math.Log(2) * float64(size) / float64(numItems)))
-	// fmt.Println(size, numHashFunctions)
+	
 	return NewBySizeAndNumHashFuncs(size, numHashFunctions, hash1, hash2)
 }
 
@@ -165,7 +164,6 @@ func NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFun
 func NewTSByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, hash2 HashFunction64) *BloomFilterTS {
 	size := uint64(math.Ceil(-1 * float64(numItems) * math.Log(fpRate) / math.Pow(math.Log(2), 2)))
 	numHashFunctions := uint8(math.Ceil(math.Log(2) * float64(size) / float64(numItems)))
-	// fmt.Printf("size %v, numHashFunctions %v", size, numHashFunctions)
 
 	bf := NewBySizeAndNumHashFuncs(size, numHashFunctions, hash1, hash2)
 
@@ -183,13 +181,11 @@ func (bf *BloomFilter) getBitLocations(data []byte) []uint64 {
 	hash1Val := bf.hash1(data)
 	hash2Val := bf.hash2(data)
 
-	// fmt.Println(string(data), hash1Val, hash2Val)
-
 	retVal := make([]uint64, bf.numHashFunctions)
 
 	for i := uint8(0); i < bf.numHashFunctions; i++ {
 		retVal[i] = (hash1Val + uint64(i)*hash2Val) % (bf.size)
 	}
-	// fmt.Println(retVal)
+
 	return retVal
 }
