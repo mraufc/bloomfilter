@@ -151,6 +151,8 @@ func TestFalsePositiveRate10000_0001(t *testing.T)   { testFalsePositiveRate(t, 
 func TestFalsePositiveRate100000_0001(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.0001) }
 func TestFalsePositiveRate1000000_0001(t *testing.T)   { testFalsePositiveRate(t, 1000000, 0.0001) }
 
+// TODO: consider adding a distrubution test for default hash functions
+
 func BenchmarkAdd(t *testing.B) {
 	var (
 		count = 1000000
