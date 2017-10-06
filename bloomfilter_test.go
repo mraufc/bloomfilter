@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	letterBytes string = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	letterBytes string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*() "
+	acceptableAdditionalFalsePositiveErrorRate float64 = 0.5
 )
 
 type testCase struct {
@@ -37,8 +38,7 @@ func TestBloomFilterBasics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			result := bf.Query(tt.data)
-			if !result {
+			if result := bf.Query(tt.data); !result {
 				t.Errorf("Query(%v): expected %v, actual %v", string(tt.data), true, false)
 			}
 		})
@@ -66,8 +66,7 @@ func TestBloomFilterTSBasics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			result := bf.Query(tt.data)
-			if !result {
+			if result := bf.Query(tt.data); !result {
 				t.Errorf("Query(%v): expected %v, actual %v", string(tt.data), true, false)
 			}
 		})
@@ -130,6 +129,7 @@ func TestBloomFilterTSParallel(t *testing.T) {
 	}
 }
 
+// Some of the following tests may fail even when an additional acceptable false positive rate is provided
 func TestFalsePositiveRate1000_5(t *testing.T)   { testFalsePositiveRate(t, 1000, 0.5) }
 func TestFalsePositiveRate10000_5(t *testing.T)   { testFalsePositiveRate(t, 10000, 0.5) }
 func TestFalsePositiveRate100000_5(t *testing.T)   { testFalsePositiveRate(t, 100000, 0.5) }
@@ -247,8 +247,7 @@ func testFalsePositiveRate(t *testing.T, count int, fp float64) {
 	for _, tt := range testFP {
 		t.Run(tt.description, func(t *testing.T) {
 			totalCount++
-			result := bf.Query(tt.data)
-			if result {
+			if result := bf.Query(tt.data); result {
 				if _, ok := mT[string(tt.data)]; !ok {
 					fpCount++
 				}
@@ -257,9 +256,9 @@ func testFalsePositiveRate(t *testing.T, count int, fp float64) {
 	}
 
 	actualFpRate := float64(fpCount) / float64(totalCount)
-
-	if actualFpRate > 1.3 * fp {
-		t.Errorf("Expected false positive rate is %v, actual is %v - %v out of %v items\n", fp, actualFpRate, fpCount, totalCount)
+	acceptableFpRate := (1 + acceptableAdditionalFalsePositiveErrorRate) * fp
+	if actualFpRate > acceptableFpRate {
+		t.Errorf("expected false positive rate is %v, acceptable is %v, actual is %v - %v out of %v items\n", fp, acceptableFpRate, actualFpRate, fpCount, totalCount)
 	}
 }
 
