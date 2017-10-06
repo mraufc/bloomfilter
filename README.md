@@ -1,3 +1,6 @@
+Bloom Filter
+-------------
+
 A Bloom Filter is a space-efficient probabilistic data structure, conceived by 
 Burton Howard Bloom in 1970, that is used to test whether an element is a member of a set.
 It is possible to add an elemen to a bloom filter or query an element for existence, 
@@ -39,3 +42,8 @@ Once a bloom filter structure is created, one can add an element by;
 and test an element for existence by;
 
     exists := bf.Query([]byte("data"))
+
+Installation
+-------------
+
+     go get -u github.com/mraufc/bloomfilter
