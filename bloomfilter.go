@@ -66,7 +66,7 @@
 package bloomfilter
 
 import (
-	"log"
+	"errors"
 	"math"
 	"hash/fnv"
 	"sync"
@@ -137,9 +137,12 @@ func (bfts *BloomFilterTS) Query(data []byte) bool {
 // This function calculates size in bits and ideal number of hash functions that will be created by double hashing of 
 // hash function hash1 and hash function hash2.
 // HashFunction64 hash1 and HashFunction64 hash2 can be nil and when they are nil, a default HashFunction64 for each will be used.
-func NewByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, hash2 HashFunction64) *BloomFilter {
-	if (numItems == 0) {
-		log.Fatalln("number of items must be positive")
+func NewByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, hash2 HashFunction64) (*BloomFilter, error) {
+	if numItems == 0 {
+		return nil, errors.New("number of items must be positive") 
+	}
+	if fpRate >= 1.0 || fpRate <= 0.0 {
+		return nil, errors.New("false positive rate must be in range of (0.0, 1.0)")
 	}
 	size := uint64(math.Ceil(-1 * float64(numItems) * math.Log(fpRate) / math.Pow(math.Log(2), 2)))
 	numHashFunctions := uint8(math.Ceil(math.Log(2) * float64(size) / float64(numItems)))
@@ -167,17 +170,19 @@ func defaultHash2() func(input []byte) uint64 {
 // hash function hash1 and hash function hash2.
 // HashFunction64 hash1 and HashFunction64 hash2 can be nil and when they are nil, a default HashFunction64 for each will be used.
 // This function returns a new BloomFilter structure.
-func NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFunction64, hash2 HashFunction64) *BloomFilter {
+func NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFunction64, hash2 HashFunction64) (*BloomFilter, error) {
+	if size == 0 {
+		return nil, errors.New("size is the number of bits in bloom filter structure and should be positive")
+	}
+	if numHashFunctions == 0 {
+		return nil, errors.New("number of hash functions should be positive")
+	}
 	if hash1 == nil {
 		hash1 = defaultHash1()
 	}
 
 	if hash2 == nil {
 		hash2 = defaultHash2()
-	}
-
-	if size == 0 {
-		size = uint64(8 * 1024 * 1024 * 100) // 10 mb in bits
 	}
 
 	l := (size - (size % 64)) / 64
@@ -188,10 +193,6 @@ func NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFun
 
 	bits := make([]uint64, l, l)
 
-	if numHashFunctions == uint8(0) {
-		numHashFunctions = uint8(11)
-	}
-
 	bf := BloomFilter{
 		hash1:            hash1,
 		hash2:            hash2,
@@ -200,24 +201,30 @@ func NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFun
 		bits:             bits,
 	}
 
-	return &bf
+	return &bf, nil
 }
 
 // NewTSByEstimates returns a new BloomFilterTS structure. For more details, please see NewByEstimates function.
-func NewTSByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, hash2 HashFunction64) *BloomFilterTS {
+func NewTSByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, hash2 HashFunction64) (*BloomFilterTS, error) {
 	size := uint64(math.Ceil(-1 * float64(numItems) * math.Log(fpRate) / math.Pow(math.Log(2), 2)))
 	numHashFunctions := uint8(math.Ceil(math.Log(2) * float64(size) / float64(numItems)))
 
-	bf := NewBySizeAndNumHashFuncs(size, numHashFunctions, hash1, hash2)
+	bf, err := NewBySizeAndNumHashFuncs(size, numHashFunctions, hash1, hash2)
+	if err != nil {
+		return nil, err
+	}
 
-	return &BloomFilterTS{bf: bf}
+	return &BloomFilterTS{bf: bf}, nil
 }
 
 // NewTSBySizeAndNumHashFuncs returns a new BloomFilterTS structure. For more details, please see NewBySizeAndNumHashFuncs function.
-func NewTSBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFunction64, hash2 HashFunction64) *BloomFilterTS {
-	bf := NewBySizeAndNumHashFuncs(size, numHashFunctions, hash1, hash2)
+func NewTSBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFunction64, hash2 HashFunction64) (*BloomFilterTS, error) {
+	bf, err := NewBySizeAndNumHashFuncs(size, numHashFunctions, hash1, hash2)
+	if err != nil {
+		return nil, err
+	}
 
-	return &BloomFilterTS{bf: bf}
+	return &BloomFilterTS{bf: bf}, nil
 }
 
 func (bf *BloomFilter) getBitLocations(data []byte) []uint64 {

@@ -28,7 +28,11 @@ func TestBloomFilterBasics(t *testing.T) {
 
 	tests := prepTestCases(count, minStrLen, maxStrLen)
 
-	bf := NewByEstimates(numItems, fp, nil, nil)
+	bf, err := NewByEstimates(numItems, fp, nil, nil)
+	if err != nil {
+		t.Log(err.Error())
+		t.FailNow()
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
@@ -56,7 +60,11 @@ func TestBloomFilterTSBasics(t *testing.T) {
 
 	tests := prepTestCases(count, minStrLen, maxStrLen)
 
-	bf := NewTSByEstimates(numItems, fp, nil, nil)
+	bf, err := NewTSByEstimates(numItems, fp, nil, nil)
+	if err != nil {
+		t.Log(err.Error())
+		t.FailNow()
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
@@ -114,7 +122,11 @@ func TestBloomFilterTSParallel(t *testing.T) {
 
 	tests := prepTestCases(count, minStrLen, maxStrLen)
 
-	bf := NewTSByEstimates(numItems, fp, nil, nil)
+	bf, err := NewTSByEstimates(numItems, fp, nil, nil)
+	if err != nil {
+		t.Log(err.Error())
+		t.FailNow()
+	}
 
 	t.Parallel()
 	for _, tt := range tests {
@@ -162,7 +174,12 @@ func BenchmarkAdd(t *testing.B) {
 		minStrLen = 20
 	)
 
-	bf := NewByEstimates(numItems, fp, nil, nil)
+	bf, err := NewByEstimates(numItems, fp, nil, nil)
+	if err != nil {
+		t.Log(err.Error())
+		t.FailNow()
+	}
+
 	tests := prepTestCases(count, minStrLen, maxStrLen)
 
 	t.ResetTimer()
@@ -182,7 +199,12 @@ func BenchmarkQueryEmptyBF(t *testing.B) {
 		minStrLen = 20
 	)
 
-	bf := NewByEstimates(numItems, fp, nil, nil)
+	bf, err := NewByEstimates(numItems, fp, nil, nil)
+	if err != nil {
+		t.Log(err.Error())
+		t.FailNow()
+	}
+
 	tests := prepTestCases(count, minStrLen, maxStrLen)
 
 	t.ResetTimer()
@@ -200,7 +222,12 @@ func BenchmarkQuery(t *testing.B) {
 		minStrLen = 20
 	)
 
-	bf := NewByEstimates(numItems, fp, nil, nil)
+	bf, err := NewByEstimates(numItems, fp, nil, nil)
+	if err != nil {
+		t.Log(err.Error())
+		t.FailNow()
+	}
+
 	tests := prepTestCases(count, minStrLen, maxStrLen)
 
 	for _, tt := range tests {
@@ -222,7 +249,11 @@ func testFalsePositiveRate(t *testing.T, count int, fp float64) {
 		minStrLen = 30
 	)
 
-	bf := NewByEstimates(numItems, fp, nil, nil)
+	bf, err := NewByEstimates(numItems, fp, nil, nil)
+	if err != nil {
+		t.Log(err.Error())
+		t.FailNow()
+	}
 
 	// input strings (actually byte slices) are random, 
 	// for uniqueness and false positive rate testing,
