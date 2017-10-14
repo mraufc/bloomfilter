@@ -36,12 +36,12 @@
 // It is possible to create a new bloom filter data structure by providing either estimated number of items
 // that the bloom filter will hold and estimated false positove error rate along with two custom hash functions:
 //
-//     bf := NewByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, hash2 HashFunction64)
+//     bf := NewByEstimates(numItems uint64, fpRate float64, hash1 hash.Hash64, hash2 hash.Hash64)
 // 
 // or maximum bloom filter size (in bits) and number or hash functions that will be created by double hashing
 // of two hash functions:
 // 
-//     bf := NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFunction64, hash2 HashFunction64)
+//     bf := NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 hash.Hash64, hash2 hash.Hash64)
 //
 // In both cases, when hash1 and/or hash2 values are nil, default hash function implementations of FNV-1 and/or FNV-1a
 // from the standard library will be used.
@@ -49,11 +49,11 @@
 // Both of the above bloom filter data structures are non-thread safe, however it is possible to create a thread safe
 // implementation by:
 //
-//     bfts := NewTSByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, hash2 HashFunction64)
+//     bfts := NewTSByEstimates(numItems uint64, fpRate float64, hash1 hash.Hash64, hash2 hash.Hash64)
 //
 // or
 // 
-//     bfts := NewTSBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFunction64, hash2 HashFunction64)
+//     bfts := NewTSBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 hash.Hash64, hash2 hash.Hash64)
 //
 // Once a bloom filter structure is created, one can add an element by;
 //
@@ -134,7 +134,7 @@ func (bfts *BloomFilterTS) Query(data []byte) bool {
 // NewByEstimates requires estimated number of items and estimated false positive rate to create a BloomFilter structure.
 // This function calculates size in bits and ideal number of hash functions that will be created by double hashing of 
 // hash function hash1 and hash function hash2.
-// HashFunction64 hash1 and HashFunction64 hash2 can be nil and when they are nil, a default HashFunction64 for each will be used.
+// hash.Hash64 hash1 and hash.Hash64 hash2 can be nil and when they are nil, a default hash.Hash64 for each will be used.
 func NewByEstimates(numItems uint64, fpRate float64, hash1 hash.Hash64, hash2 hash.Hash64) (*BloomFilter, error) {
 	if numItems == 0 {
 		return nil, errors.New("number of items must be positive") 
@@ -158,7 +158,7 @@ func defaultHash2() hash.Hash64 {
 
 // NewBySizeAndNumHashFuncs requires maximum size in bits and number of hash functions that will be created via double hashing of
 // hash function hash1 and hash function hash2.
-// HashFunction64 hash1 and HashFunction64 hash2 can be nil and when they are nil, a default HashFunction64 for each will be used.
+// hash.Hash64 hash1 and hash.Hash64 hash2 can be nil and when they are nil, a default hash.Hash64 for each will be used.
 // This function returns a new BloomFilter structure.
 func NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 hash.Hash64, hash2 hash.Hash64) (*BloomFilter, error) {
 	if size == 0 {
