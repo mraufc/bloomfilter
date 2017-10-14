@@ -66,19 +66,17 @@
 package bloomfilter
 
 import (
+	"hash"
 	"errors"
 	"math"
 	"hash/fnv"
 	"sync"
 )
 
-// HashFunction64 is a function type that takes a byte slice as input and returns hash value of uint64 type.
-type HashFunction64 func([]byte) uint64
-
 // BloomFilter is non-thread safe bloom filter data structure.
 type BloomFilter struct {
-	hash1            HashFunction64
-	hash2            HashFunction64
+	hash1            hash.Hash64
+	hash2            hash.Hash64
 	numHashFunctions uint8
 	size             uint64 //in bits
 	bits             []uint64
@@ -137,7 +135,7 @@ func (bfts *BloomFilterTS) Query(data []byte) bool {
 // This function calculates size in bits and ideal number of hash functions that will be created by double hashing of 
 // hash function hash1 and hash function hash2.
 // HashFunction64 hash1 and HashFunction64 hash2 can be nil and when they are nil, a default HashFunction64 for each will be used.
-func NewByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, hash2 HashFunction64) (*BloomFilter, error) {
+func NewByEstimates(numItems uint64, fpRate float64, hash1 hash.Hash64, hash2 hash.Hash64) (*BloomFilter, error) {
 	if numItems == 0 {
 		return nil, errors.New("number of items must be positive") 
 	}
@@ -150,27 +148,19 @@ func NewByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, hash2
 	return NewBySizeAndNumHashFuncs(size, numHashFunctions, hash1, hash2)
 }
 
-func defaultHash1() func(input []byte) uint64 {
-	return func(input []byte) uint64 {
-		h := fnv.New64a()
-		h.Write(input)
-		return h.Sum64()
-	}
+func defaultHash1() hash.Hash64 {
+	return fnv.New64a()
 }
 
-func defaultHash2() func(input []byte) uint64 {
-	return func(input []byte) uint64 {
-		h := fnv.New64()
-		h.Write(input)
-		return h.Sum64()
-	}
+func defaultHash2() hash.Hash64 {
+	return fnv.New64()
 }
 
 // NewBySizeAndNumHashFuncs requires maximum size in bits and number of hash functions that will be created via double hashing of
 // hash function hash1 and hash function hash2.
 // HashFunction64 hash1 and HashFunction64 hash2 can be nil and when they are nil, a default HashFunction64 for each will be used.
 // This function returns a new BloomFilter structure.
-func NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFunction64, hash2 HashFunction64) (*BloomFilter, error) {
+func NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 hash.Hash64, hash2 hash.Hash64) (*BloomFilter, error) {
 	if size == 0 {
 		return nil, errors.New("size is the number of bits in bloom filter structure and should be positive")
 	}
@@ -205,7 +195,7 @@ func NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFun
 }
 
 // NewTSByEstimates returns a new BloomFilterTS structure. For more details, please see NewByEstimates function.
-func NewTSByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, hash2 HashFunction64) (*BloomFilterTS, error) {
+func NewTSByEstimates(numItems uint64, fpRate float64, hash1 hash.Hash64, hash2 hash.Hash64) (*BloomFilterTS, error) {
 	size := uint64(math.Ceil(-1 * float64(numItems) * math.Log(fpRate) / math.Pow(math.Log(2), 2)))
 	numHashFunctions := uint8(math.Ceil(math.Log(2) * float64(size) / float64(numItems)))
 
@@ -218,7 +208,7 @@ func NewTSByEstimates(numItems uint64, fpRate float64, hash1 HashFunction64, has
 }
 
 // NewTSBySizeAndNumHashFuncs returns a new BloomFilterTS structure. For more details, please see NewBySizeAndNumHashFuncs function.
-func NewTSBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashFunction64, hash2 HashFunction64) (*BloomFilterTS, error) {
+func NewTSBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 hash.Hash64, hash2 hash.Hash64) (*BloomFilterTS, error) {
 	bf, err := NewBySizeAndNumHashFuncs(size, numHashFunctions, hash1, hash2)
 	if err != nil {
 		return nil, err
@@ -228,8 +218,12 @@ func NewTSBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 HashF
 }
 
 func (bf *BloomFilter) getBitLocations(data []byte) []uint64 {
-	hash1Val := bf.hash1(data)
-	hash2Val := bf.hash2(data)
+	bf.hash1.Reset()
+	bf.hash1.Write(data)
+	bf.hash2.Reset()
+	bf.hash2.Write(data)
+	hash1Val := bf.hash1.Sum64()
+	hash2Val := bf.hash2.Sum64()
 
 	retVal := make([]uint64, bf.numHashFunctions)
 
