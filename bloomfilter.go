@@ -67,7 +67,6 @@ package bloomfilter
 
 import (
 	"hash"
-	"errors"
 	"math"
 	"hash/fnv"
 	"sync"
@@ -137,10 +136,10 @@ func (bfts *BloomFilterTS) Query(data []byte) bool {
 // hash.Hash64 hash1 and hash.Hash64 hash2 can be nil and when they are nil, a default hash.Hash64 for each will be used.
 func NewByEstimates(numItems uint64, fpRate float64, hash1 hash.Hash64, hash2 hash.Hash64) (*BloomFilter, error) {
 	if numItems == 0 {
-		return nil, errors.New("number of items must be positive") 
+		return nil, ErrInvalidNumberOfItems 
 	}
 	if fpRate >= 1.0 || fpRate <= 0.0 {
-		return nil, errors.New("false positive rate must be in range of (0.0, 1.0)")
+		return nil, ErrInvalidFalsePositiveRate
 	}
 	size := uint64(math.Ceil(-1 * float64(numItems) * math.Log(fpRate) / math.Pow(math.Log(2), 2)))
 	numHashFunctions := uint8(math.Ceil(math.Log(2) * float64(size) / float64(numItems)))
@@ -162,10 +161,10 @@ func defaultHash2() hash.Hash64 {
 // This function returns a new BloomFilter structure.
 func NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 hash.Hash64, hash2 hash.Hash64) (*BloomFilter, error) {
 	if size == 0 {
-		return nil, errors.New("size is the number of bits in bloom filter structure and should be positive")
+		return nil, ErrInvalidSize
 	}
 	if numHashFunctions == 0 {
-		return nil, errors.New("number of hash functions should be positive")
+		return nil, ErrInvalidNumberOfHashFunctions
 	}
 	if hash1 == nil {
 		hash1 = defaultHash1()
@@ -196,6 +195,13 @@ func NewBySizeAndNumHashFuncs(size uint64, numHashFunctions uint8, hash1 hash.Ha
 
 // NewTSByEstimates returns a new BloomFilterTS structure. For more details, please see NewByEstimates function.
 func NewTSByEstimates(numItems uint64, fpRate float64, hash1 hash.Hash64, hash2 hash.Hash64) (*BloomFilterTS, error) {
+	if numItems == 0 {
+		return nil, ErrInvalidNumberOfItems 
+	}
+	if fpRate >= 1.0 || fpRate <= 0.0 {
+		return nil, ErrInvalidFalsePositiveRate
+	}
+	
 	size := uint64(math.Ceil(-1 * float64(numItems) * math.Log(fpRate) / math.Pow(math.Log(2), 2)))
 	numHashFunctions := uint8(math.Ceil(math.Log(2) * float64(size) / float64(numItems)))
 
